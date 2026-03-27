@@ -36,14 +36,14 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: radial-gradient(1200px 700px at 15% -10%, #ffffff, transparent),
-      linear-gradient(180deg, #f6f7fb 0%, #eef2f7 100%);
+    background: none;
     color: var(--text);
     font-family: var(--font-body);
     font-size: 14px;
     height: 100vh;
     overflow: hidden;
     display: flex;
+    position: relative;
   }
   body[data-theme="dark"] {
     --bg: #0e100f;
@@ -66,8 +66,30 @@
     --purple: #9b72cf;
     --glow: rgba(111,207,124,0.12);
     --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.35);
-    background: radial-gradient(1000px 600px at 15% -10%, #1c2020, transparent),
-      linear-gradient(180deg, #0e100f 0%, #0b0d0c 100%);
+    background: none;
+  }
+  #bg-video {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    filter: none;
+    pointer-events: none;
+  }
+  body[data-theme="dark"] #bg-video {
+    filter: none;
+  }
+  .bg-scrim {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(246,247,251,0.6), rgba(238,242,247,0.6));
+    z-index: -1;
+    pointer-events: none;
+  }
+  body[data-theme="dark"] .bg-scrim {
+    background: linear-gradient(180deg, rgba(14,16,15,0.6), rgba(10,13,12,0.72));
   }
   #sidebar {
     width: var(--sidebar-w);
@@ -78,6 +100,16 @@
     flex-shrink: 0;
     overflow: hidden;
     box-shadow: inset -1px 0 0 rgba(17,28,45,0.02);
+    position: relative;
+    z-index: 1;
+  }
+  #sidebar.hidden {
+    width: 0;
+    border-right: none;
+  }
+  #sidebar.hidden > * {
+    opacity: 0;
+    pointer-events: none;
   }
   .sidebar-header {
     padding: 20px 18px 14px;
@@ -161,7 +193,7 @@
   .today-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
   .today-bar { height: 4px; background: var(--border); border-radius: 4px; margin-top: 8px; overflow: hidden; }
   .today-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 4px; transition: width 0.4s ease; }
-  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; z-index: 1; }
   #landing {
     position: fixed;
     inset: 0;
@@ -219,7 +251,7 @@
   .landing-list { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--text2); }
   .landing-list span { display: flex; align-items: center; gap: 8px; }
   .landing-chip { font-family: var(--font-mono); font-size: 10px; padding: 3px 6px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); color: var(--text3); }
-  #topbar { height: 56px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 12px; background: var(--bg2); flex-shrink: 0; box-shadow: 0 2px 0 rgba(17,28,45,0.02); }
+  #topbar { height: 56px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 12px; background: var(--bg2); flex-shrink: 0; box-shadow: 0 2px 0 rgba(17,28,45,0.02); position: relative; z-index: 2; }
   .topbar-title { font-family: var(--font-display); font-size: 20px; color: var(--text); flex: 1; }
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
   .btn { display: flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-family: var(--font-body); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; box-shadow: 0 2px 8px rgba(17, 28, 45, 0.04); }
@@ -416,6 +448,11 @@
 </head>
 <body>
 
+<video id="bg-video" autoplay muted loop playsinline>
+  <source src="peace1.mp4" type="video/mp4">
+</video>
+<div class="bg-scrim" aria-hidden="true"></div>
+
 <div id="landing" role="dialog" aria-modal="true">
   <div class="landing-card">
     <div>
@@ -527,6 +564,7 @@
       </div>
       <div class="user-chip" id="user-chip"></div>
       <button class="btn" id="theme-toggle-btn" title="Toggle theme">Theme</button>
+      <button class="btn" id="sidebar-toggle-btn" title="Toggle sidebar">☰ Sidebar</button>
       <button class="btn" id="logout-btn" title="Log out">Logout</button>
       <button class="btn" id="profile-btn" title="Profile">Profile</button>
       <button class="btn" id="export-btn" title="Export">Export</button>
@@ -740,6 +778,7 @@ function openHelp() {
         <div><span style="font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:6px;">?</span> Open Help</div>
         <div><span style="font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:6px;">Ctrl/⌘ + N</span> New root task</div>
         <div><span style="font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:6px;">Ctrl/⌘ + K</span> Focus search</div>
+        <div><span style="font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:6px;">Ctrl/⌘ + B</span> Toggle sidebar</div>
         <div><span style="font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:6px;">Ctrl/⌘ + Z</span> Undo last project delete</div>
         <div><span style="font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:6px;">Double‑click</span> Edit task name</div>
         <div><span style="font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:6px;">Esc</span> Close modal / menu</div>
@@ -1726,6 +1765,22 @@ function setTheme(theme){
   localStorage.setItem(THEME_KEY, theme);
   updateThemeBtn();
 }
+
+const SIDEBAR_KEY = 'treetodo_sidebar_hidden';
+function setSidebarHidden(hidden) {
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  if (!sidebar || !btn) return;
+  sidebar.classList.toggle('hidden', hidden);
+  btn.textContent = hidden ? '☰ Show Sidebar' : '☰ Hide Sidebar';
+  btn.title = hidden ? 'Show sidebar' : 'Hide sidebar';
+  localStorage.setItem(SIDEBAR_KEY, hidden ? '1' : '0');
+}
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const hidden = sidebar?.classList.contains('hidden');
+  setSidebarHidden(!hidden);
+}
 function toggleTheme(){
   const cur = document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   setTheme(cur === 'dark' ? 'light' : 'dark');
@@ -1759,6 +1814,7 @@ document.addEventListener('keydown',e=>{
   }
   if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();addRootTask();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('search-input').focus();}
+  if((e.metaKey||e.ctrlKey)&&e.key==='b'){e.preventDefault();toggleSidebar();}
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
     if (lastDeletedProject) {
       e.preventDefault();
@@ -1774,6 +1830,7 @@ document.addEventListener('keydown',e=>{
 initTheme();
 requireAuth();
 document.getElementById('theme-toggle-btn')?.addEventListener('click', toggleTheme);
+document.getElementById('sidebar-toggle-btn')?.addEventListener('click', toggleSidebar);
 document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
 document.getElementById('profile-btn')?.addEventListener('click', openProfile);
 document.getElementById('export-btn')?.addEventListener('click', exportData);
@@ -1783,6 +1840,7 @@ document.getElementById('help-btn')?.addEventListener('click', openHelp);
 loadState();
 loadProfileSummary();
 if (!localStorage.getItem(LANDING_KEY)) showLanding();
+setSidebarHidden(localStorage.getItem(SIDEBAR_KEY) === '1');
 </script>
 </body>
 </html>
